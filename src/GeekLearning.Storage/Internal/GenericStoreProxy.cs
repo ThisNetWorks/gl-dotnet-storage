@@ -23,7 +23,7 @@
 
         public string Name => this.innerStore.Name;
 
-        public Task InitAsync() => this.innerStore.InitAsync();
+        public Task InitAsync(IStoreOptions individualStoreOptions) => this.innerStore.InitAsync(individualStoreOptions);
 
         public Task DeleteAsync(IPrivateFileReference file) => this.innerStore.DeleteAsync(file);
 
@@ -46,5 +46,9 @@
         public ValueTask<IFileReference> SaveAsync(byte[] data, IPrivateFileReference file, string contentType, OverwritePolicy overwritePolicy = OverwritePolicy.Always) => this.innerStore.SaveAsync(data, file, contentType, overwritePolicy);
 
         public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy) => this.innerStore.GetSharedAccessSignatureAsync(policy);
+
+        public void Dispose()
+        {
+        }
     }
 }

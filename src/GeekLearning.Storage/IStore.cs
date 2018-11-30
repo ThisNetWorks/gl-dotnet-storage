@@ -1,14 +1,15 @@
 ﻿namespace GeekLearning.Storage
 {
+    using GeekLearning.Storage.Configuration;
     using System;
     using System.IO;
     using System.Threading.Tasks;
 
-    public interface IStore
+    public interface IStore : IDisposable
     {
         string Name { get; }
 
-        Task InitAsync();
+        Task InitAsync(IStoreOptions storeOptions);
 
         ValueTask<IFileReference[]> ListAsync(string path, bool recursive, bool withMetadata);
 

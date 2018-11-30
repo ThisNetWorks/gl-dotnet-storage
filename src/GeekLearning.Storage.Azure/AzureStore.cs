@@ -1,6 +1,7 @@
 ﻿namespace GeekLearning.Storage.Azure
 {
     using GeekLearning.Storage.Azure.Configuration;
+    using GeekLearning.Storage.Configuration;
     using Microsoft.WindowsAzure.Storage;
     using Microsoft.WindowsAzure.Storage.Blob;
     using Microsoft.WindowsAzure.Storage.Core;
@@ -13,25 +14,38 @@
 
     public class AzureStore : IStore
     {
-        private readonly AzureStoreOptions storeOptions;
-        private readonly Lazy<CloudBlobClient> client;
-        private readonly Lazy<CloudBlobContainer> container;
+        private AzureStoreOptions _storeOptions;
+        private readonly Lazy<CloudBlobClient> _client;
+        private Lazy<CloudBlobContainer> _container;
 
         public AzureStore(AzureStoreOptions storeOptions)
         {
             storeOptions.Validate();
 
-            this.storeOptions = storeOptions;
-            this.client = new Lazy<CloudBlobClient>(() => CloudStorageAccount.Parse(storeOptions.ConnectionString).CreateCloudBlobClient());
-            this.container = new Lazy<CloudBlobContainer>(() => this.client.Value.GetContainerReference(storeOptions.FolderName));
+            this._storeOptions = storeOptions;
+            this._client = new Lazy<CloudBlobClient>(() => CloudStorageAccount.Parse(storeOptions.ConnectionString).CreateCloudBlobClient());
         }
 
-        public string Name => this.storeOptions.Name;
+        public string Name => this._storeOptions.Name;
 
-        public Task InitAsync()
+        public void Dispose()
         {
+            this._container = null;
+        }
+
+        public Task InitAsync(IStoreOptions individualStoreOptions)
+        {
+            //gives us the option to create a container per store, adhoc on the fly
+            if (individualStoreOptions != null)
+            {
+                individualStoreOptions.Validate();
+                this._storeOptions = (AzureStoreOptions)individualStoreOptions;
+            }
+            //regardless we need to build a container now
+            this._container = new Lazy<CloudBlobContainer>(() => this._client.Value.GetContainerReference(this._storeOptions.FolderName));
+
             BlobContainerPublicAccessType accessType;
-            switch (this.storeOptions.AccessLevel)
+            switch (this._storeOptions.AccessLevel)
             {
                 case Storage.Configuration.AccessLevel.Public:
                     accessType = BlobContainerPublicAccessType.Container;
@@ -45,11 +59,15 @@
                     break;
             }
 
-            return this.container.Value.CreateIfNotExistsAsync(accessType, null, null);
+            return this._container.Value.CreateIfNotExistsAsync(accessType, null, null);
         }
 
         public async ValueTask<IFileReference[]> ListAsync(string path, bool recursive, bool withMetadata)
         {
+            if (this._container == null)
+            {
+                throw new Exception("Must init store with a container");
+            }
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = null;
@@ -67,7 +85,7 @@
 
             do
             {
-                var response = await this.container.Value.ListBlobsSegmentedAsync(path, recursive, withMetadata ? BlobListingDetails.Metadata : BlobListingDetails.None, null, continuationToken, new BlobRequestOptions(), new OperationContext());
+                var response = await this._container.Value.ListBlobsSegmentedAsync(path, recursive, withMetadata ? BlobListingDetails.Metadata : BlobListingDetails.None, null, continuationToken, new BlobRequestOptions(), new OperationContext());
                 continuationToken = response.ContinuationToken;
                 results.AddRange(response.Results);
             }
@@ -78,6 +96,10 @@
 
         public async ValueTask<IFileReference[]> ListAsync(string path, string searchPattern, bool recursive, bool withMetadata)
         {
+            if (this._container == null)
+            {
+                throw new Exception("Must init store with a container");
+            }
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = null;
@@ -107,7 +129,7 @@
 
             do
             {
-                var response = await this.container.Value.ListBlobsSegmentedAsync(prefix, recursive, withMetadata ? BlobListingDetails.Metadata : BlobListingDetails.None, null, continuationToken, new BlobRequestOptions(), new OperationContext());
+                var response = await this._container.Value.ListBlobsSegmentedAsync(prefix, recursive, withMetadata ? BlobListingDetails.Metadata : BlobListingDetails.None, null, continuationToken, new BlobRequestOptions(), new OperationContext());
                 continuationToken = response.ContinuationToken;
                 results.AddRange(response.Results);
             }
@@ -166,8 +188,12 @@
 
         public async ValueTask<IFileReference> SaveAsync(Stream data, IPrivateFileReference file, string contentType, OverwritePolicy overwritePolicy = OverwritePolicy.Always)
         {
+            if (this._container == null)
+            {
+                throw new Exception("Must init store with a container");
+            }
             var uploadBlob = true;
-            var blockBlob = this.container.Value.GetBlockBlobReference(file.Path);
+            var blockBlob = this._container.Value.GetBlockBlobReference(file.Path);
             var blobExists = await blockBlob.ExistsAsync();
 
             if (blobExists)
@@ -209,6 +235,10 @@
 
         public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy)
         {
+            if (this._container == null)
+            {
+                throw new Exception("Must init store with a container");
+            }
             var adHocPolicy = new SharedAccessBlobPolicy()
             {
                 SharedAccessStartTime = policy.StartTime,
@@ -216,7 +246,7 @@
                 Permissions = FromGenericToAzure(policy.Permissions),
             };
 
-            return new ValueTask<string>(this.container.Value.GetSharedAccessSignature(adHocPolicy));
+            return new ValueTask<string>(this._container.Value.GetSharedAccessSignature(adHocPolicy));
         }
 
         internal static SharedAccessBlobPermissions FromGenericToAzure(SharedAccessPermissions permissions)
@@ -272,18 +302,26 @@
                     // When the URI is absolute, we cannot get a simple reference to the blob, so the
                     // properties and metadata are fetched, even if it was not asked.
 
-                    blob = await this.client.Value.GetBlobReferenceFromServerAsync(uri);
+                    blob = await this._client.Value.GetBlobReferenceFromServerAsync(uri);
                     withMetadata = true;
                 }
                 else
                 {
                     if (withMetadata)
                     {
-                        blob = await this.container.Value.GetBlobReferenceFromServerAsync(uri.ToString());
+                        if (this._container == null)
+                        {
+                            throw new Exception("Must init store with a container");
+                        }
+                        blob = await this._container.Value.GetBlobReferenceFromServerAsync(uri.ToString());
                     }
                     else
                     {
-                        blob = this.container.Value.GetBlockBlobReference(uri.ToString());
+                        if (this._container == null)
+                        {
+                            throw new Exception("Must init store with a container");
+                        }
+                        blob = this._container.Value.GetBlockBlobReference(uri.ToString());
                         if (!(await blob.ExistsAsync()))
                         {
                             return null;
@@ -303,5 +341,6 @@
                 throw;
             }
         }
+
     }
 }

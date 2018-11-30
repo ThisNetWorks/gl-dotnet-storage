@@ -1,5 +1,6 @@
 ﻿namespace GeekLearning.Storage.FileSystem
 {
+    using GeekLearning.Storage.Configuration;
     using GeekLearning.Storage.FileSystem.Configuration;
     using System;
     using System.Collections.Generic;
@@ -10,7 +11,7 @@
 
     public class FileSystemStore : IStore
     {
-        private readonly FileSystemStoreOptions storeOptions;
+        private FileSystemStoreOptions _storeOptions;
         private readonly IPublicUrlProvider publicUrlProvider;
         private readonly IExtendedPropertiesProvider extendedPropertiesProvider;
 
@@ -18,17 +19,22 @@
         {
             storeOptions.Validate();
 
-            this.storeOptions = storeOptions;
+            this._storeOptions = storeOptions;
             this.publicUrlProvider = publicUrlProvider;
             this.extendedPropertiesProvider = extendedPropertiesProvider;
         }
 
-        public string Name => storeOptions.Name;
+        public string Name => _storeOptions.Name;
 
-        internal string AbsolutePath => storeOptions.AbsolutePath;
+        internal string AbsolutePath => _storeOptions.AbsolutePath;
 
-        public Task InitAsync()
+        public Task InitAsync(IStoreOptions individualStoreOptions)
         {
+            if (individualStoreOptions != null)
+            {
+                individualStoreOptions.Validate();
+                _storeOptions = (FileSystemStoreOptions)individualStoreOptions;
+            }
             if (!Directory.Exists(this.AbsolutePath))
             {
                 Directory.CreateDirectory(this.AbsolutePath);
@@ -232,6 +238,10 @@
             }
 
             return (eTag, contentMD5);
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

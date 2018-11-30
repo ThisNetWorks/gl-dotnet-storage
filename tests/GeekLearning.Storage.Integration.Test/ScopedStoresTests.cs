@@ -26,7 +26,7 @@
             var formatArg = Guid.NewGuid();
             var store = storageFactory.GetScopedStore(storeName, formatArg);
 
-            await store.InitAsync();
+            await store.InitAsync(null);
 
             var textToWrite = "The answer is 42";
             var filePath = "Update/42.txt";
