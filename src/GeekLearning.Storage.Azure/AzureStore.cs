@@ -241,7 +241,7 @@
             return reference;
         }
 
-        public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy)
+        public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy, ISharedIpAddressOrRange sharedIpAddressOrRange = null)
         {
             if (this._container == null)
             {
@@ -253,8 +253,19 @@
                 SharedAccessExpiryTime = policy.ExpiryTime,
                 Permissions = FromGenericToAzure(policy.Permissions),
             };
+            IPAddressOrRange ipAddressRange = null;
+            if (sharedIpAddressOrRange != null)
+            {
+                if (sharedIpAddressOrRange.IsSingleAddress)
+                {
+                    ipAddressRange = new IPAddressOrRange(sharedIpAddressOrRange.Address);
+                } else
+                {
+                    ipAddressRange = new IPAddressOrRange(sharedIpAddressOrRange.MinimumAddress, sharedIpAddressOrRange.MaximumAddress);
+                }
+            }
 
-            return new ValueTask<string>(this._container.Value.GetSharedAccessSignature(adHocPolicy));
+            return new ValueTask<string>(this._container.Value.GetSharedAccessSignature(adHocPolicy, null, null, ipAddressRange));
         }
 
         internal static SharedAccessBlobPermissions FromGenericToAzure(SharedAccessPermissions permissions)

@@ -46,7 +46,7 @@
 
         public ValueTask<IFileReference> SaveAsync(byte[] data, IPrivateFileReference file, string contentType, OverwritePolicy overwritePolicy = OverwritePolicy.Always, IDictionary<string, string> metadata = null) => this.innerStore.SaveAsync(data, file, contentType, overwritePolicy);
 
-        public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy) => this.innerStore.GetSharedAccessSignatureAsync(policy);
+        public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy, ISharedIpAddressOrRange sharedIpAddressOrRange = null) => this.innerStore.GetSharedAccessSignatureAsync(policy, sharedIpAddressOrRange);
 
         public void Dispose()
         {

@@ -179,9 +179,9 @@
             return fileReference;
         }
 
-        public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy)
+        public async ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy, ISharedIpAddressOrRange sharedIpAddressOrRange = null)
         {
-            throw new NotSupportedException();
+            return await Task.FromResult("not-supported");
         }
 
         private ValueTask<Internal.FileSystemFileReference> InternalGetAsync(IPrivateFileReference file, bool withMetadata = false, bool checkIfExists = true)
