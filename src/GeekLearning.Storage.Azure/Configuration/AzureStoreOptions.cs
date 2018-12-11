@@ -10,6 +10,10 @@
 
         public string ConnectionStringName { get; set; }
 
+        public bool RestrictIp { get; set; }
+
+        public int AccessKeyLength { get; set; }
+
         public override IEnumerable<IOptionError> Validate(bool throwOnError = true)
         {
             var baseErrors = base.Validate(throwOnError);
