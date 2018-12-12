@@ -14,6 +14,10 @@
 
         public int AccessKeyLength { get; set; }
 
+        public string MediaItemsInQueueName { get; set; }
+
+        public int MediaItemsPerQueueMessage { get; set; }
+
         public override IEnumerable<IOptionError> Validate(bool throwOnError = true)
         {
             var baseErrors = base.Validate(throwOnError);
