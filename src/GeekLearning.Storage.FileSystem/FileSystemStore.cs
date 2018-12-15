@@ -43,6 +43,19 @@
             return Task.FromResult(0);
         }
 
+        public Task<bool> DeleteFolderAsync()
+        {
+            if (Directory.Exists(this.AbsolutePath))
+            {
+                Directory.Delete(this.AbsolutePath, true);
+                return Task.FromResult(true);
+            } else
+            {
+                return Task.FromResult(false);
+            }
+
+        }
+
         public async ValueTask<IFileReference[]> ListAsync(string path, bool recursive, bool withMetadata)
         {
             var directoryPath = (string.IsNullOrEmpty(path) || path == "/" || path == "\\") ? this.AbsolutePath : Path.Combine(this.AbsolutePath, path);

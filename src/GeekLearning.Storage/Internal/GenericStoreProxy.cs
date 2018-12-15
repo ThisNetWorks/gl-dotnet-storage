@@ -28,6 +28,8 @@
 
         public Task DeleteAsync(IPrivateFileReference file) => this.innerStore.DeleteAsync(file);
 
+        public Task<bool> DeleteFolderAsync() => this.innerStore.DeleteFolderAsync();
+
         public ValueTask<IFileReference> GetAsync(Uri file, bool withMetadata) => this.innerStore.GetAsync(file, withMetadata);
 
         public ValueTask<IFileReference> GetAsync(IPrivateFileReference file, bool withMetadata) => this.innerStore.GetAsync(file, withMetadata);

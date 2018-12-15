@@ -62,6 +62,17 @@
             return this._container.Value.CreateIfNotExistsAsync(accessType, null, null);
         }
 
+        public async Task<bool> DeleteFolderAsync()
+        {
+            if (this._container == null)
+            {
+                throw new Exception("Must init store with a container");
+            }
+            var result = await this._container.Value.DeleteIfExistsAsync();
+            this._container = null;
+            return result;
+        }
+
         public async ValueTask<IFileReference[]> ListAsync(string path, bool recursive, bool withMetadata)
         {
             if (this._container == null)

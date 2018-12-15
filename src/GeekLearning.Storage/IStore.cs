@@ -12,6 +12,8 @@
 
         Task InitAsync(IStoreOptions storeOptions);
 
+        Task<bool> DeleteFolderAsync();
+
         ValueTask<IFileReference[]> ListAsync(string path, bool recursive, bool withMetadata);
 
         ValueTask<IFileReference[]> ListAsync(string path, string searchPattern, bool recursive, bool withMetadata);
