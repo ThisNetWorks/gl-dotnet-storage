@@ -252,7 +252,7 @@
             return reference;
         }
 
-        public ValueTask<string> GetSharedAccessSignatureAsync(ISharedAccessPolicy policy, ISharedIpAddressOrRange sharedIpAddressOrRange = null)
+        public string GetSharedAccessSignature(ISharedAccessPolicy policy, ISharedIpAddressOrRange sharedIpAddressOrRange = null)
         {
             if (this._container == null)
             {
@@ -276,7 +276,7 @@
                 }
             }
 
-            return new ValueTask<string>(this._container.Value.GetSharedAccessSignature(adHocPolicy, null, null, ipAddressRange));
+            return this._container.Value.GetSharedAccessSignature(adHocPolicy, null, null, ipAddressRange);
         }
 
         internal static SharedAccessBlobPermissions FromGenericToAzure(SharedAccessPermissions permissions)
